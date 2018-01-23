@@ -5,14 +5,13 @@
 */
 
 /* Put dependencies here */
-var request = require('request')
 const async = require('async')
-const {
-    URL
-} = require('url')
+const fs = require('fs')
+var request = require('request')
+const { URL } = require('url')
 var cookies = [
-    'd2lSessionVal=bqYqh03mt9Vfd6HeN12WCXXBx;',
-    'd2lSecureSessionVal=tagNJRUG3qkzBxwZzgJEPg0cR;',
+    'd2lSessionVal=QbAJFTrPfZKs5zo1PbRRuOp8M;',
+    'd2lSecureSessionVal=M76AlKC0PV6Xz3NDzIuBeiChM;',
 ]
 
 /* Include this line only if you are going to use Canvas API */
@@ -29,54 +28,51 @@ function addCookies(cookies) {
     })
 }
 
-function D2LGET(url, cb) {
+function D2LGET(url) {
     var url = new URL(url, 'https://byui.brightspace.com/').href
-    request.get(url, function (err, res, body) {
-        if (err) return cb(err)
-        try {
-            console.log(body)
-            var data = JSON.parse(body)
-            
-            cb(null, data)
-        } catch (e) {
-            cb(e)
-        }
-    })
-}
+    return new Promise((resolve,reject) => {
+        request.get(url, function (err, res, body) {
+            if (err) return reject(err)
+            try {
+                // For some reason the json parse dosen't work
+                var data = JSON.parse(body)
+                resolve(data)
+            } catch (e) {
+                try {
+                    // So when that fails i'm cheating and using eval
+                    var data = eval(body)
+                    resolve(data)
 
-
-async function getCatagories(ou, version, cb) {
-    // Shortening our urls a little bit
-    var tag = `/d2l/api/lp/${version || "1.20"}/${ou}`
-
-    // Getting every group catagory
-    D2LGET(`${tag}/groupcategories/`, function (err, data) {
-        if (err) return cb(err)
-        
-        // For each catagory
-        async.map(data, function (catagory, catagoryCB) {
-            // still too long so it gets its own variables
-            var url = `${tag}/groupcategories/${catagory.GroupCategoryId}/groups`
-            // Get more details about the groups
-            D2LGET(url, function (err, data) {
-                if (err) return catagoryCB(err)
-                
-                // overwritting the list of numbers
-                catagory.Groups = data
-                // return our improved
-                catagoryCB(null,catagory)
-            })
-        },function(err,categories){
-            if(err) return cb(err)
-            
-            // returning
-            cb(null,categories)  
+                } catch(e){
+                    reject(e)
+                }
+            }
         })
     })
 }
 
-addCookies(cookies)
-getCatagories(10011,"1.20",console.log)
+async function getCatagories(ou, version) {
+    // Shortening our urls a little bit
+    var tag = `/d2l/api/lp/${version || "1.20"}/${ou}`
+
+    // Getting every group catagory
+    var catagories = await D2LGET(`${tag}/groupcategories/`)
+    for(var i = 0; i < catagories.length; i++){
+        var url = `${tag}/groupcategories/${catagories[i].GroupCategoryId}/groups/`
+        catagories[i].Groups = await D2LGET(url)
+    }
+    return catagories
+}
+
+
+async function main(){
+    addCookies(cookies)
+    var groups = await getCatagories(237861,"1.20")
+    fs.writeFileSync('groups.json',JSON.stringify(groups))
+}
+
+main()
+
 
 //module.exports = (course, stepCallback) => {
 //    /* Create the module report so that we can access it later as needed.

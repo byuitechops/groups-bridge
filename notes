@@ -1,0 +1,65 @@
+EnrollmentStyle:
+NumberOfGroupsNoEnrollment	0
+NumberOfGroupsAutoEnrollment	2
+SelfEnrollmentNumberOfGroups	4
+
+PeoplePerGroupAutoEnrollment	1
+PeoplePerGroupSelfEnrollment	3
+
+PeoplePerNumberOfGroupsSelfEnrollment	5
+
+EnrollmentStyle:
+
+NumberOfGroups               NoEnrollment	    0
+NumberOfGroups               AutoEnrollment	    2
+NumberOfGroups               SelfEnrollment 	4
+
+                PeoplePer    AutoEnrollment		1
+                PeoplePer    SelfEnrollment		3
+
+NumberOfGroups  PeoplePer    SelfEnrollment		5
+
+
+# of Groups - No Auto Enrollments
+Groups of #
+# of Groups
+Groups of # - Self Enrollment
+# of Groups - Self Enrollment
+# of Groups, Capacity of # - Self Enrollment
+Single user, member-specific groups
+
+
+EnrollmentQuantity || (NumberOfGroups && MaxUsersPerGroup)
+
+EnrollmentQuantity: Either Number of Groups or Group Limit based on EnrollmentStyle
+AutoEnroll: 
+true - Users automatically added to the group with least amount of users
+false - Enrolled manually
+
+RandomizeEnrollments:
+true - Enrolled in a random order
+false - Enrolled by order in class list
+
+name: 
+
+self_signup: - If the group category allows users to join a group themselves
+restricted - restricts them to only joining a group in their section
+enabled - allows students to assign themselves to a group
+null - disallows students from joining groups
+
+auto_leader: - Gives instructors the ability to automatically have group leaders assigned
+random - picks a student from the group at random as the leader
+first - sets the first student to be assigned to the group as the leader
+null
+
+group_limit: - Limit the maximum number of users in each group (self-signup)
+
+
+Name => name
+MaxUsersPerGroup => group_limit
+undefined => auto_leader
+
+self_signup:
+AutoEnroll && RestrictedByOrgUnitId => restricted
+AutoEnroll && !RestrictedByOrgUnitId => enabled
+!AutoEnroll => undefined
