@@ -1,10 +1,10 @@
 {
-    "name": "child-template",
+    "name": "groups-bridge",
     "version": "1.0.0",
-    "description": "Put your child module's description here",
+    "description": "Copies the d2l groups into canvas groups",
     "main": "main.js",
     "dependencies": {
-        "canvas-wrapper": "git+https://github.com/byuitechops/Canvas-wrapper",
+        "canvas-wrapper": "git+https://github.com/byuitechops/Canvas-wrapper.git",
         "request": "^2.83.0"
     },
     "devDependencies": {
@@ -18,13 +18,13 @@
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/byuitechops/child-template.git"
+        "url": "git+https://github.com/byuitechops/groups-bridge.git"
     },
     "author": "Benjamin Earl",
     "license": "MIT",
     "bugs": {
-        "url": "https://github.com/byuitechops/child-template/issues"
+        "url": "https://github.com/byuitechops/groups-bridge/issues"
     },
-    "homepage": "https://github.com/byuitechops/child-template#readme",
+    "homepage": "https://github.com/byuitechops/groups-bridge#readme",
     "childType": "postImport"
 }
