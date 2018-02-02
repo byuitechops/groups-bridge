@@ -31,7 +31,7 @@ function D2LGET(subdomain,url,cb) {
         console.log(res.statusCode,body);
         if (err) return cb(err);
         if (res.statusCode != 200){
-            return cb(res.statusCode+' '+body)
+            return cb(res.statusCode+' '+body);
         }
         try {
             if(body.length){
