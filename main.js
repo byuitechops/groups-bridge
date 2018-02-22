@@ -28,18 +28,13 @@ function D2LGET(subdomain,url,cb) {
     url = new URL(url,`https://${subdomain}.brightspace.com/`).href;
     course.message(`Making a request to ${url}`);
     request.get(url, function (err, res, body) {
-        console.log(res.statusCode,body);
         if (err) return cb(err);
         if (res.statusCode != 200){
             return cb(res.statusCode+' '+body);
         }
         try {
-            if(body.length){
-                var data = JSON.parse(body);
-                cb(null,data);
-            } else {
-                cb(null,body);
-            }
+            var data = JSON.parse(body);
+            cb(null,data);
         } catch (e) {
             cb(body+' '+ e);
         }
@@ -51,51 +46,93 @@ function getCatagories(subdomain, ou, version,cb) {
     var tag = `/d2l/api/lp/${version || '1.20'}/${ou}`;
 
     // Getting every group catagory
-    D2LGET(subdomain,`${tag}/groupcategories/`,function(err,data){
+    D2LGET(subdomain,`${tag}/groupcategories/`,function(err,catagories){
         if(err){
             course.error(new Error('Couldn\'t get the groupcatagories in d2l: '+err));
             return cb('Couldn\'t get the groupcatagories in d2l: '+err);
         }
-
-        var canvasCategories;
-
-        if(data.length){
-            course.message(`Got ${data.length} groupcatagories`);
-            // Mapping them to the canvas settings
-            canvasCategories = data.map(function(cat){
-                // See the 'notes' file for my notes on this
-                var self_signup = undefined;
-                if(cat.AutoEnroll){
-                    if(cat.RestrictedByOrgUnitId){
-                        self_signup = 'restricted';
-                    } else {
-                        self_signup = 'enabled';
-                    }
-                }
-                return {
-                    name: cat.Name,
-                    group_limit: cat.MaxUsersPerGroup,
-                    self_signup: self_signup,
-                };
-            });
-        } else {
+        
+        if(!catagories.length){
             course.message('There aren\'t any groupcatagories');
-            canvasCategories = [];
+            cb(null,[]);
+            return;
+        } else {
+            course.message(`Got ${catagories.length} groupcatagories`);
         }
-		
-        cb(null,canvasCategories);
+        
+        async.forEach(catagories,function getGroups(catagory,cb){
+            D2LGET(subdomain,`${tag}/groupcategories/${catagory.GroupCategoryId}/groups/`,(err,groups) => {
+                if(err){
+                    return cb(`Couldn't get the groups from the ${catagory.Name} catagory in d2l: ${err}`);
+                }
+                catagory.Groups = groups
+                cb()
+            })
+        }, function final(err){
+            if(err){
+                course.error(new Error(err));
+            }
+            
+            // Mapping them to the canvas settings
+            catagories = convertToCanvasSettings(catagories);
+            cb(null,catagories)
+        })
     });
 }
 
-function createCategories(courseId,cats, cb){
-    async.map(cats,function(cat,catCB){
-        canvas.post(`/api/v1/courses/${courseId}/group_categories`,cat,function(err,data){
-            // errors are handled later
-            catCB(null,{
-                error:err,
-                data:data,
-                name:cat.name,
-            });
+function convertToCanvasSettings(catagories) {
+    return catagories.map(function (catagory) {
+        // See the 'notes' file for my notes on this
+        var self_signup = undefined;
+        if (catagory.AutoEnroll) {
+            if (catagory.RestrictedByOrgUnitId) {
+                self_signup = 'restricted';
+            }
+            else {
+                self_signup = 'enabled';
+            }
+        }
+        return {
+            name: catagory.Name,
+            group_limit: catagory.MaxUsersPerGroup,
+            self_signup: self_signup,
+            groups: catagory.Groups.map(function(group){
+                return {
+                    name:group.Name,
+                    description:group.Description.Text
+                }
+            })
+        };
+    });
+}
+
+function createCategories(courseId,catagories, cb){
+    async.map(catagories,function(catagory,catCB){
+        // takes the groups out of the catagory
+        var groups
+        ({groups,...catagory} = catagory)
+
+        canvas.post(`/api/v1/courses/${courseId}/group_categories`,catagory,function(err,createdCatagory){
+            if(err){
+                catCB(null,{err:`Error creating the ${catagory.Name} catagory in canvas: ${err}`})
+                return;
+            }
+
+            async.map(groups,function(group,groupcb){
+                canvas.post(`/api/v1/group_categories/${createdCatagory.id}/groups`,group,groupcb)
+            },function(err,createdGroups){
+                if(err){
+                    catCB(null,{err:`Error creating the groups for ${catagory.Name} in canvas: ${err}`})
+                    return;
+                }
+                // errors are handled later
+                catCB(null,{
+                    catagory:createdCatagory,
+                    groups:createdGroups,
+                    name:catagory.name,
+                });
+            })
+
         });
     },cb);
 }
@@ -107,26 +144,34 @@ module.exports = (_course, stepCallback) => {
 
     /* How to report an error (Replace "moduleName") */
 	
-    var subdomain = 'byui';
     var cookies = [
-        'd2lSessionVal=jRmidd4JGBVdlodUY7KvjPQJs;',
-        'd2lSecureSessionVal=IY2PJWVZcRaxVbR8zsEIfAffs;',
+        'd2lSessionVal=KwJGADErLdTdPYsvO8gvctohY;',
+        'd2lSecureSessionVal=InMXdwKwdv15G7IY7WM015aqs;',
     ];
-    addCookies(subdomain,cookies);
+    addCookies(course.info.domain,cookies);
     
-    course.info.D2LOU = course.info.D2LOU || 320004;
+    course.info.D2LOU = course.info.D2LOU || 340002;
 
-    getCatagories(subdomain,course.info.D2LOU,'1.20',function(err,data){
-        if(err) return console.error(err);
+    getCatagories(course.info.domain,course.info.D2LOU,'1.20',function(err,data){
+        if(err) return course.warning(new Error(err));
 		
         createCategories(course.info.canvasOU,data,function(err,data){
             data.forEach(res => {
                 if(res.err){
-                    course.warning(new Error(`couldn't create the ${res.name} group catagory`));
+                    course.warning(new Error(res.err));
                 } else {
                     course.log('Group Catagories Created',{
-                        'Group Name': res.name
+                        'Catagory Name': res.catagory.name,
+                        'Catagory Id': res.catagory.id
                     });
+                    res.groups.forEach(group => {
+                        course.log('Group Created',{
+                            'Catagory Name': res.catagory.name,
+                            'Catagory Id': res.catagory.id,
+                            'Group Name': group.name,
+                            'Group Id': group.id,
+                        });
+                    })
                 }
             });
             stepCallback(null, course);

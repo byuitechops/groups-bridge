@@ -63,3 +63,8 @@ self_signup:
 AutoEnroll && RestrictedByOrgUnitId => restricted
 AutoEnroll && !RestrictedByOrgUnitId => enabled
 !AutoEnroll => undefined
+
+
+canvas: join_level
+    parent_context_auto_join
+    parent_context_request
