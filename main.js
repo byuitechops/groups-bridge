@@ -52,6 +52,7 @@ function getCatagories(subdomain, ou, version,cb) {
             return cb('Couldn\'t get the groupcatagories in d2l: '+err);
         }
         
+        // If there aren't any group catagories
         if(!catagories.length){
             course.message('There aren\'t any groupcatagories');
             cb(null,[]);
@@ -138,25 +139,27 @@ function createCategories(courseId,catagories, cb){
 }
 
 module.exports = (_course, stepCallback) => {
-    /* Used to log successful actions */
+    // Create the global variable
     course = _course;
-    // course.message('moduleName successfully ...');
 
-    /* How to report an error (Replace "moduleName") */
-	
+    // Temporarily using my own cookies until they get passed through the course object
     var cookies = [
         'd2lSessionVal=KwJGADErLdTdPYsvO8gvctohY;',
         'd2lSecureSessionVal=InMXdwKwdv15G7IY7WM015aqs;',
     ];
-    addCookies(course.info.domain,cookies);
-    
+    addCookies(course.info.domain,cookies || course.info.cookies);
+
     course.info.D2LOU = course.info.D2LOU || 340002;
 
+    // Get the catagories from d2l
     getCatagories(course.info.domain,course.info.D2LOU,'1.20',function(err,data){
         if(err) return course.warning(new Error(err));
-		
+        
+        // create the catagories in canvas
         createCategories(course.info.canvasOU,data,function(err,data){
-            data.forEach(res => {
+            
+            // Log it all
+            data.forEach(function(res){
                 if(res.err){
                     course.warning(new Error(res.err));
                 } else {
@@ -174,6 +177,8 @@ module.exports = (_course, stepCallback) => {
                     })
                 }
             });
+
+            // Finish!
             stepCallback(null, course);
         });
     });

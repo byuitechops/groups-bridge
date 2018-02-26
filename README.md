@@ -44,18 +44,17 @@ If your module adds anything to `course.info` or anywhere else on the course obj
 
 Describe in steps how the module accomplishes its goals.
 
-1. Does this thing
-2. Does that thing
-3. Does that other thing
+1. Uses the cookies to use the d2l api to get the group information
+2. Rearranges the information into the structure that D2L is expecting
+3. Uses the canvas api to create the groups
 
 ## Log Categories
 
 List the categories used in logging data in your module.
 
-- Discussions Created
-- Canvas Files Deleted
-- etc.
+- Group Catagories Created
+- Group Created
 
 ## Requirements
 
-These are the expectations for the child module. What does it need to do? What is the "customer" wanting from it? 
+To copy the Group catagories and Groups from d2l to canvas, with as much of the settings intact as possible
