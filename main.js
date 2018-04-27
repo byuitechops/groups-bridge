@@ -110,8 +110,8 @@ function convertToCanvasSettings(catagories) {
 function createCategories(courseId,catagories, cb){
     async.map(catagories,function(catagory,catCB){
         // takes the groups out of the catagory
-        var groups
-        ({groups,...catagory} = catagory)
+        var groups = catagory.groups
+        delete catagory.groups
 
         canvas.post(`/api/v1/courses/${courseId}/group_categories`,catagory,function(err,createdCatagory){
             if(err){
