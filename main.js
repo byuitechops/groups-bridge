@@ -143,11 +143,12 @@ module.exports = (_course, stepCallback) => {
     course = _course;
 
     // Temporarily using my own cookies until they get passed through the course object
-    var cookies = [
-        'd2lSessionVal=KwJGADErLdTdPYsvO8gvctohY;',
-        'd2lSecureSessionVal=InMXdwKwdv15G7IY7WM015aqs;',
-    ];
-    addCookies(course.info.domain,cookies || (course.settings.cookies && course.settings.cookies.map(c => c.name+'='+c.value)));
+    if(!course.settings.cookies){
+        course.error("Didn't recieve the cookies, so I couldn't access the groups in d2l")
+        return
+    }
+
+    addCookies(course.info.domain,course.settings.cookies.map(c => c.name+'='+c.value));
 
     course.info.D2LOU = course.info.D2LOU || 340002;
 
