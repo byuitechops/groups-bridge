@@ -147,7 +147,7 @@ module.exports = (_course, stepCallback) => {
         'd2lSessionVal=KwJGADErLdTdPYsvO8gvctohY;',
         'd2lSecureSessionVal=InMXdwKwdv15G7IY7WM015aqs;',
     ];
-    addCookies(course.info.domain,cookies || course.info.cookies);
+    addCookies(course.info.domain,cookies || (course.settings.cookies && course.settings.cookies.map(c => c.name+'='+c.value)));
 
     course.info.D2LOU = course.info.D2LOU || 340002;
 
