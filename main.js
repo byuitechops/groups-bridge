@@ -41,21 +41,20 @@ function D2LGET(subdomain,url,cb) {
     });
 }
 
-function getCatagories(subdomain, ou, version,cb) {
+function getCatagories(subdomain, ou, version,callback) {
     // Shortening our urls a little bit
     var tag = `/d2l/api/lp/${version || '1.20'}/${ou}`;
 
     // Getting every group catagory
     D2LGET(subdomain,`${tag}/groupcategories/`,function(err,catagories){
         if(err){
-            course.error(new Error('Couldn\'t get the groupcatagories in d2l: '+err));
-            return cb('Couldn\'t get the groupcatagories in d2l: '+err);
+            return callback('Couldn\'t get the groupcatagories in d2l: '+err);
         }
         
         // If there aren't any group catagories
         if(!catagories.length){
             course.message('There aren\'t any groupcatagories');
-            cb(null,[]);
+            callback(null,[]);
             return;
         } else {
             course.message(`Got ${catagories.length} groupcatagories`);
@@ -71,12 +70,12 @@ function getCatagories(subdomain, ou, version,cb) {
             })
         }, function final(err){
             if(err){
-                course.error(new Error(err));
+                callback(err)
             }
             
             // Mapping them to the canvas settings
             catagories = convertToCanvasSettings(catagories);
-            cb(null,catagories)
+            callback(null,catagories)
         })
     });
 }
@@ -142,9 +141,8 @@ module.exports = (_course, stepCallback) => {
     // Create the global variable
     course = _course;
 
-    // Temporarily using my own cookies until they get passed through the course object
     if(!course.settings.cookies){
-        course.error("Didn't recieve the cookies, so I couldn't access the groups in d2l")
+        course.error(new Error("Didn't recieve the cookies, so I couldn't access the groups in d2l"))
         return
     }
 
@@ -154,8 +152,11 @@ module.exports = (_course, stepCallback) => {
 
     // Get the catagories from d2l
     getCatagories(course.info.domain,course.info.D2LOU,'1.20',function(err,data){
-        if(err) return course.warning(new Error(err));
-        
+        if(err) {
+            course.warning(new Error(err));
+            stepCallback(null, course);
+            return 
+        }
         // create the catagories in canvas
         createCategories(course.info.canvasOU,data,function(err,data){
             
