@@ -6,7 +6,9 @@
 
 /* Put dependencies here */
 const async = require('async');
-const { URL } = require('url');
+const {
+    URL
+} = require('url');
 var request = require('request');
 var course;
 
@@ -16,7 +18,7 @@ const canvas = require('canvas-wrapper');
 /* View available course object functions */
 // https://github.com/byuitechops/d2l-to-canvas-conversion-tool/blob/master/documentation/classFunctions.md
 
-function addCookies(subdomain,cookies) {
+function addCookies(subdomain, cookies) {
     var j = request.jar();
     cookies.forEach(c => j.setCookie(request.cookie(c), `https://${subdomain}.brightspace.com/`));
     request = request.defaults({
@@ -24,58 +26,58 @@ function addCookies(subdomain,cookies) {
     });
 }
 
-function D2LGET(subdomain,url,cb) {
-    url = new URL(url,`https://${subdomain}.brightspace.com/`).href;
+function D2LGET(subdomain, url, cb) {
+    url = new URL(url, `https://${subdomain}.brightspace.com/`).href;
     course.message(`Making a request to ${url}`);
     request.get(url, function (err, res, body) {
         if (err) return cb(err);
-        if (res.statusCode != 200){
-            return cb(res.statusCode+' '+body);
+        if (res.statusCode != 200) {
+            return cb(res.statusCode + ' ' + body);
         }
         try {
             var data = JSON.parse(body);
-            cb(null,data);
+            cb(null, data);
         } catch (e) {
-            cb(body+' '+ e);
+            cb(body + ' ' + e);
         }
     });
 }
 
-function getCatagories(subdomain, ou, version,callback) {
+function getCatagories(subdomain, ou, version, callback) {
     // Shortening our urls a little bit
     var tag = `/d2l/api/lp/${version || '1.20'}/${ou}`;
 
     // Getting every group catagory
-    D2LGET(subdomain,`${tag}/groupcategories/`,function(err,catagories){
-        if(err){
-            return callback('Couldn\'t get the groupcatagories in d2l: '+err);
+    D2LGET(subdomain, `${tag}/groupcategories/`, function (err, catagories) {
+        if (err) {
+            return callback('Couldn\'t get the groupcatagories in d2l: ' + err);
         }
-        
+
         // If there aren't any group catagories
-        if(!catagories.length){
+        if (!catagories.length) {
             course.message('There aren\'t any groupcatagories');
-            callback(null,[]);
+            callback(null, []);
             return;
         } else {
             course.message(`Got ${catagories.length} groupcatagories`);
         }
-        
-        async.forEach(catagories,function getGroups(catagory,cb){
-            D2LGET(subdomain,`${tag}/groupcategories/${catagory.GroupCategoryId}/groups/`,(err,groups) => {
-                if(err){
+
+        async.forEach(catagories, function getGroups(catagory, cb) {
+            D2LGET(subdomain, `${tag}/groupcategories/${catagory.GroupCategoryId}/groups/`, (err, groups) => {
+                if (err) {
                     return cb(`Couldn't get the groups from the ${catagory.Name} catagory in d2l: ${err}`);
                 }
                 catagory.Groups = groups;
                 cb();
             });
-        }, function final(err){
-            if(err){
+        }, function final(err) {
+            if (err) {
                 callback(err);
             }
-            
+
             // Mapping them to the canvas settings
             catagories = convertToCanvasSettings(catagories);
-            callback(null,catagories);
+            callback(null, catagories);
         });
     });
 }
@@ -87,8 +89,7 @@ function convertToCanvasSettings(catagories) {
         if (catagory.AutoEnroll) {
             if (catagory.RestrictedByOrgUnitId) {
                 self_signup = 'restricted';
-            }
-            else {
+            } else {
                 self_signup = 'enabled';
             }
         }
@@ -96,81 +97,85 @@ function convertToCanvasSettings(catagories) {
             name: catagory.Name,
             group_limit: catagory.MaxUsersPerGroup,
             self_signup: self_signup,
-            groups: catagory.Groups.map(function(group){
+            groups: catagory.Groups.map(function (group) {
                 return {
-                    name:group.Name,
-                    description:group.Description.Text
+                    name: group.Name,
+                    description: group.Description.Text
                 };
             })
         };
     });
 }
 
-function createCategories(courseId,catagories, cb){
-    async.map(catagories,function(catagory,catCB){
+function createCategories(courseId, catagories, cb) {
+    async.map(catagories, function (catagory, catCB) {
         // takes the groups out of the catagory
         var groups = catagory.groups;
         delete catagory.groups;
 
-        canvas.post(`/api/v1/courses/${courseId}/group_categories`,catagory,function(err,createdCatagory){
-            if(err){
-                catCB(null,{err:`Error creating the ${catagory.Name} catagory in canvas: ${err}`});
+        canvas.post(`/api/v1/courses/${courseId}/group_categories`, catagory, function (err, createdCatagory) {
+            if (err) {
+                catCB(null, {
+                    err: `Error creating the ${catagory.Name} catagory in canvas: ${err}`
+                });
                 return;
             }
 
-            async.map(groups,function(group,groupcb){
-                canvas.post(`/api/v1/group_categories/${createdCatagory.id}/groups`,group,groupcb);
-            },function(err,createdGroups){
-                if(err){
-                    catCB(null,{err:`Error creating the groups for ${catagory.Name} in canvas: ${err}`});
+            async.map(groups, function (group, groupcb) {
+                canvas.post(`/api/v1/group_categories/${createdCatagory.id}/groups`, group, groupcb);
+            }, function (err, createdGroups) {
+                if (err) {
+                    catCB(null, {
+                        err: `Error creating the groups for ${catagory.Name} in canvas: ${err}`
+                    });
                     return;
                 }
                 // errors are handled later
-                catCB(null,{
-                    catagory:createdCatagory,
-                    groups:createdGroups,
-                    name:catagory.name,
+                catCB(null, {
+                    catagory: createdCatagory,
+                    groups: createdGroups,
+                    name: catagory.name,
                 });
             });
 
         });
-    },cb);
+    }, cb);
 }
 
 module.exports = (_course, stepCallback) => {
     // Create the global variable
     course = _course;
 
-    if(!course.settings.cookies){
-        course.error(new Error('Didn\'t recieve the cookies, so I couldn\'t access the groups in d2l'));
+    if (!course.settings.cookies || course.settings.cookies.length === 0) {
+        course.warning('No cookies provided. Skipping child module.');
         return;
     }
 
-    addCookies(course.info.domain,course.settings.cookies.map(c => c.name+'='+c.value));
+    addCookies(course.info.domain, course.settings.cookies.map(c => c.name + '=' + c.value));
 
     course.info.D2LOU = course.info.D2LOU || 340002;
 
     // Get the catagories from d2l
-    getCatagories(course.info.domain,course.info.D2LOU,'1.20',function(err,data){
-        if(err) {
-            course.warning(new Error(err));
+    getCatagories(course.info.domain, course.info.D2LOU, '1.20', function (err, data) {
+        if (err) {
+            course.error(new Error(err));
             stepCallback(null, course);
-            return; 
+            return;
         }
         // create the catagories in canvas
-        createCategories(course.info.canvasOU,data,function(err,data){
-            
+        createCategories(course.info.canvasOU, data, function (err, data) {
+
             // Log it all
-            data.forEach(function(res){
-                if(res.err){
-                    course.warning(new Error(res.err));
+            data.forEach(function (res) {
+                if (res.err) {
+                    course.error(new Error(res.err));
                 } else {
-                    course.log('Group Catagories Created',{
+                    course.log('Group Catagories Created', {
                         'Catagory Name': res.catagory.name,
                         'Catagory Id': res.catagory.id
                     });
                     res.groups.forEach(group => {
-                        course.log('Group Created',{
+                        course.log('Group Created', {
                             'Catagory Name': res.catagory.name,
                             'Catagory Id': res.catagory.id,
                             'Group Name': group.name,
