@@ -65,18 +65,18 @@ function getCatagories(subdomain, ou, version,callback) {
                 if(err){
                     return cb(`Couldn't get the groups from the ${catagory.Name} catagory in d2l: ${err}`);
                 }
-                catagory.Groups = groups
-                cb()
-            })
+                catagory.Groups = groups;
+                cb();
+            });
         }, function final(err){
             if(err){
-                callback(err)
+                callback(err);
             }
             
             // Mapping them to the canvas settings
             catagories = convertToCanvasSettings(catagories);
-            callback(null,catagories)
-        })
+            callback(null,catagories);
+        });
     });
 }
 
@@ -100,7 +100,7 @@ function convertToCanvasSettings(catagories) {
                 return {
                     name:group.Name,
                     description:group.Description.Text
-                }
+                };
             })
         };
     });
@@ -109,20 +109,20 @@ function convertToCanvasSettings(catagories) {
 function createCategories(courseId,catagories, cb){
     async.map(catagories,function(catagory,catCB){
         // takes the groups out of the catagory
-        var groups = catagory.groups
-        delete catagory.groups
+        var groups = catagory.groups;
+        delete catagory.groups;
 
         canvas.post(`/api/v1/courses/${courseId}/group_categories`,catagory,function(err,createdCatagory){
             if(err){
-                catCB(null,{err:`Error creating the ${catagory.Name} catagory in canvas: ${err}`})
+                catCB(null,{err:`Error creating the ${catagory.Name} catagory in canvas: ${err}`});
                 return;
             }
 
             async.map(groups,function(group,groupcb){
-                canvas.post(`/api/v1/group_categories/${createdCatagory.id}/groups`,group,groupcb)
+                canvas.post(`/api/v1/group_categories/${createdCatagory.id}/groups`,group,groupcb);
             },function(err,createdGroups){
                 if(err){
-                    catCB(null,{err:`Error creating the groups for ${catagory.Name} in canvas: ${err}`})
+                    catCB(null,{err:`Error creating the groups for ${catagory.Name} in canvas: ${err}`});
                     return;
                 }
                 // errors are handled later
@@ -131,7 +131,7 @@ function createCategories(courseId,catagories, cb){
                     groups:createdGroups,
                     name:catagory.name,
                 });
-            })
+            });
 
         });
     },cb);
@@ -142,8 +142,8 @@ module.exports = (_course, stepCallback) => {
     course = _course;
 
     if(!course.settings.cookies){
-        course.error(new Error("Didn't recieve the cookies, so I couldn't access the groups in d2l"))
-        return
+        course.error(new Error('Didn\'t recieve the cookies, so I couldn\'t access the groups in d2l'));
+        return;
     }
 
     addCookies(course.info.domain,course.settings.cookies.map(c => c.name+'='+c.value));
@@ -155,7 +155,7 @@ module.exports = (_course, stepCallback) => {
         if(err) {
             course.warning(new Error(err));
             stepCallback(null, course);
-            return 
+            return; 
         }
         // create the catagories in canvas
         createCategories(course.info.canvasOU,data,function(err,data){
@@ -176,7 +176,7 @@ module.exports = (_course, stepCallback) => {
                             'Group Name': group.name,
                             'Group Id': group.id,
                         });
-                    })
+                    });
                 }
             });
 
