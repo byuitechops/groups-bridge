@@ -1,30 +1,33 @@
 {
-    "name": "groups-bridge",
-    "version": "1.0.0",
-    "description": "Copies the d2l groups into canvas groups",
-    "main": "main.js",
-    "dependencies": {
-        "canvas-wrapper": "git+https://github.com/byuitechops/Canvas-wrapper.git",
-        "request": "^2.83.0"
-    },
-    "devDependencies": {
-        "async": "^2.6.0",
-        "child-development-kit": "github:byuitechops/child-development-kit",
-        "tap": "^10.7.3"
-    },
-    "scripts": {
-        "start": "node ./node_modules/child-development-kit/runChild.js",
-        "test": "tap ./node_modules/child-development-kit/testChild.js -T"
-    },
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/byuitechops/groups-bridge.git"
-    },
-    "author": "Benjamin Earl",
-    "license": "MIT",
-    "bugs": {
-        "url": "https://github.com/byuitechops/groups-bridge/issues"
-    },
-    "homepage": "https://github.com/byuitechops/groups-bridge#readme",
-    "childType": "postImport"
+  "name": "groups-bridge",
+  "version": "1.0.0",
+  "description": "Copies the d2l groups into canvas groups",
+  "main": "main.js",
+  "dependencies": {
+    "canvas-wrapper": "git+https://github.com/byuitechops/Canvas-wrapper.git",
+    "enquirer": "^1.0.3",
+    "prompt-password": "^1.2.0",
+    "puppeteer": "^1.4.0",
+    "request": "^2.83.0"
+  },
+  "devDependencies": {
+    "async": "^2.6.0",
+    "child-development-kit": "github:byuitechops/child-development-kit",
+    "tap": "^10.7.3"
+  },
+  "scripts": {
+    "start": "node ./node_modules/child-development-kit/runChild.js",
+    "test": "tap ./node_modules/child-development-kit/testChild.js -T"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/byuitechops/groups-bridge.git"
+  },
+  "author": "Benjamin Earl",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/byuitechops/groups-bridge/issues"
+  },
+  "homepage": "https://github.com/byuitechops/groups-bridge#readme",
+  "childType": "postImport"
 }
