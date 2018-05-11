@@ -28,7 +28,7 @@ module.exports = (course, childCb) => {
     async function getCookies(userData) {
         course.message('Getting Cookies');
         const browser = await puppeteer.launch({
-            headless: false
+            headless: true
         });
         try {
             const page = await browser.newPage();
