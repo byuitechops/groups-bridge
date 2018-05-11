@@ -9,6 +9,7 @@ const async = require('async');
 const {
     URL
 } = require('url');
+const getCookies = require('./getCookies.js');
 var request = require('request');
 var course;
 
@@ -146,47 +147,59 @@ module.exports = (_course, stepCallback) => {
     // Create the global variable
     course = _course;
 
-    if (!course.settings.cookies || course.settings.cookies.length === 0) {
-        course.warning('No cookies provided. Skipping child module.');
-        return;
+    function main() {
+        addCookies(course.info.domain, course.settings.cookies.map(c => c.name + '=' + c.value));
+
+        course.info.D2LOU = course.info.D2LOU || 340002;
+
+        // Get the catagories from d2l
+        getCatagories(course.info.domain, course.info.D2LOU, '1.20', function (err, data) {
+            if (err) {
+                course.error(new Error(err));
+                stepCallback(null, course);
+                return;
+            }
+            // create the catagories in canvas
+            createCategories(course.info.canvasOU, data, function (err, data) {
+
+                // Log it all
+                data.forEach(function (res) {
+                    if (res.err) {
+                        course.error(new Error(res.err));
+                    } else {
+                        course.log('Group Catagories Created', {
+                            'Catagory Name': res.catagory.name,
+                            'Catagory Id': res.catagory.id
+                        });
+                        res.groups.forEach(group => {
+                            course.log('Group Created', {
+                                'Catagory Name': res.catagory.name,
+                                'Catagory Id': res.catagory.id,
+                                'Group Name': group.name,
+                                'Group Id': group.id,
+                            });
+                        });
+                    }
+                });
+
+                // Finish!
+                stepCallback(null, course);
+            });
+        });
     }
 
-    addCookies(course.info.domain, course.settings.cookies.map(c => c.name + '=' + c.value));
-
-    course.info.D2LOU = course.info.D2LOU || 340002;
-
-    // Get the catagories from d2l
-    getCatagories(course.info.domain, course.info.D2LOU, '1.20', function (err, data) {
-        if (err) {
-            course.error(new Error(err));
-            stepCallback(null, course);
-            return;
-        }
-        // create the catagories in canvas
-        createCategories(course.info.canvasOU, data, function (err, data) {
-
-            // Log it all
-            data.forEach(function (res) {
-                if (res.err) {
-                    course.error(new Error(res.err));
-                } else {
-                    course.log('Group Catagories Created', {
-                        'Catagory Name': res.catagory.name,
-                        'Catagory Id': res.catagory.id
-                    });
-                    res.groups.forEach(group => {
-                        course.log('Group Created', {
-                            'Catagory Name': res.catagory.name,
-                            'Catagory Id': res.catagory.id,
-                            'Group Name': group.name,
-                            'Group Id': group.id,
-                        });
-                    });
-                }
-            });
-
-            // Finish!
-            stepCallback(null, course);
+    /* check for cookies before doing the important stuff */
+    if (!course.settings.cookies || course.settings.cookies.length === 0) {
+        getCookies(course, (err, cookies) => {
+            if (err) {
+                course.error(err);
+                stepCallback(null, course);
+            } else {
+                course.settings.cookies = cookies;
+                main();
+            }
         });
-    });
+    } else {
+        main();
+    }
 };
