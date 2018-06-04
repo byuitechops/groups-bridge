@@ -148,12 +148,12 @@ module.exports = (_course, stepCallback) => {
     course = _course;
 
     function main() {
-        addCookies(course.info.domain, course.settings.cookies.map(c => c.name + '=' + c.value));
+        addCookies(course.settings.domain, course.settings.cookies.map(c => c.name + '=' + c.value));
 
         course.info.D2LOU = course.info.D2LOU || 340002;
 
         // Get the catagories from d2l
-        getCatagories(course.info.domain, course.info.D2LOU, '1.20', function (err, data) {
+        getCatagories(course.settings.domain, course.info.D2LOU, '1.20', function (err, data) {
             if (err) {
                 course.error(new Error(err));
                 stepCallback(null, course);

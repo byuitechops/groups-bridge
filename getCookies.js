@@ -51,7 +51,16 @@ module.exports = (course, childCb) => {
     }
 
 
-    enquirer.ask()
+    
+
+    new Promise(res => {
+        if (course.info.username == undefined || course.info.password == undefined) {
+            res(enquirer.ask());
+        } else {
+            res({username: course.info.username, password: course.info.password});
+        }
+    })
+    // enquirer.ask()
         .then(getCookies)
         .then((cookies) => {
             childCb(null, cookies);
